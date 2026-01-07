@@ -37,19 +37,24 @@ Do giới hạn dung lượng của GitHub, một số file thư viện nặng �
 
 ```text
 ├── lib/
-│   ├── flatlaf-3.2.5.jar
-│   ├── opencv_java4120.dll
-│   └── opencv_java4120.dll
+│   ├── flatlaf-3.2.5.jar      # Thư viện giao diện đẹp (FlatLaf)
+│   ├── opencv_java4120.dll    # File hệ thống OpenCV
+│   └── opencv_java4120.dll    # Thư viện Java OpenCV
+│ 
 ├── src/
-│   ├── ImageProcess.java
-│   ├── Main.java
-│   └── UI.java
+│   ├── ImageProcess.java      # Logic xử lý ảnh & chạy YOLO
+│   ├── Main.java              # File chạy chương trình
+│   └── UI.java                # Giao diện người dùng 
+│ 
 ├── yolo/
-│   ├── coco.names
-│   ├── yolov3.cfg
-│   └── yolov3.weights
-├── yolo_report/
+│   ├── coco.names             # Danh sách tên 80 vật thể
+│   ├── yolov3.cfg             # Cấu hình mạng Neural
+│   └── yolov3.weights         # Model AI (Nặng >200MB, phải tự tải về)
+│ 
+├── yolo_report/               # Thư mục chứa báo cáo CSV xuất ra
+│               
 ├── .gitignore
+│ 
 └── README.md
 ```
 
