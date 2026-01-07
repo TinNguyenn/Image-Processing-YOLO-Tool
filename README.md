@@ -1,9 +1,6 @@
 # Công cụ tiền xử lý và nhận diện vật thể (Java + YOLOv3)
 
-Đây là bài tập lớn môn **Xử Lý Ảnh**, xây dựng một công cụ hỗ trợ tiền xử lý ảnh và nhận diện vật thể tự động sử dụng Deep Learning.
-
----
-
+Một công cụ tiền xử lý ảnh và kết hợp với mô hình YOLOv3 để nhận diện vật thể 
 
 ---
 
@@ -37,7 +34,22 @@ Do giới hạn dung lượng của GitHub, một số file thư viện nặng �
 1. Mở thư mục dự án bằng **VS Code**.
 2. Đảm bảo đã cài đặt **Extension Pack for Java**.
 3. Cấu trúc thư mục chuẩn sẽ trông như sau:
-├── lib/ │ ├── opencv_java4120.dll <-- Phải có file này │ └── ... ├── src/ │ ├── Main.java │ ├── UI.java │ └── ImageProcess.java ├── yolo/ │ ├── coco.names │ ├── yolov3.cfg │ └── yolov3.weights <-- Phải có file này (tự tải thêm) └── README.md
+
+├── lib/
+│   ├── flatlaf-3.2.5.jar
+│   ├── opencv_java4120.dll
+│   └── opencv_java4120.dll
+├── src/
+│   ├── ImageProcess.java
+│   ├── Main.java
+│   └── UI.java
+├── yolo/
+│   ├── coco.names
+│   ├── yolov3.cfg
+│   └── yolov3.weights
+├── yolo_report/
+├── .gitignore
+└── README.md
 
 ### Bước 3: Chạy chương trình
 - Mở file `src/Main.java`.
@@ -46,7 +58,7 @@ Do giới hạn dung lượng của GitHub, một số file thư viện nặng �
 
 ---
 
-## 📊 Cấu trúc báo cáo CSV
+## Cấu trúc báo cáo CSV
 Khi chạy chức năng **"3. Chạy Tất Cả"** với chế độ YOLO, file báo cáo sẽ được sinh ra trong thư mục `yolo_report/` với định dạng:
 
 | File Name | Resolution | Time (ms) | Detected Objects |
@@ -54,4 +66,3 @@ Khi chạy chức năng **"3. Chạy Tất Cả"** với chế độ YOLO, file 
 | Apple.jpg | 1920x1080 | 850 | apple |
 | Dog.jpg | 500x500 | 420 | dog | bicycle |
 
----
