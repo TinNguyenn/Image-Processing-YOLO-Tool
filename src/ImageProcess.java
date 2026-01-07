@@ -1,12 +1,15 @@
 import org.opencv.core.*;
-import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.imgproc.Imgproc;
-import java.io.File;
-import java.io.FileWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
-import org.opencv.dnn.*;   //Thư viện deep learning để dùng YOLO
+import org.opencv.imgcodecs.Imgcodecs;   //Dùng để đọc file ảnh từ ổ cứng và lưu file ảnh xuống ổ cứng
+import org.opencv.imgproc.Imgproc;       //Dùng để gọi các hàm như resize(), cvtColor(), GaussianBlur()
+
+import java.io.File;                     //Dùng để lấy đườn dẫn file
+import java.io.FileWriter;               //Dùng để ghi ra file csv
+
+import java.util.ArrayList;              //Tạo danh sách mảng động để
+import java.util.List;                   //lưu các tên vật thể được nhận diện
+
+import java.util.Scanner;                //Dùng để đọc file coco.names từng dòng và nạp vào chương trình
+import org.opencv.dnn.*;                 //Dùng để chạy YOLO
 
 public class ImageProcess {
 
@@ -50,59 +53,90 @@ public class ImageProcess {
             Tham số 1: lật theo trục dọc (0 thì là trục ngang)
         */
 
-        // 3. LOGIC YOLO MỚI: Chỉ xuất báo cáo, KHÔNG vẽ lên ảnh, KHÔNG lưu ảnh
-        if (batYolo && csvPath != null) {
-            // Nếu ảnh đang đen trắng thì chuyển lại màu để model chạy chuẩn
-            if (kq.channels() == 1) Imgproc.cvtColor(kq, kq, Imgproc.COLOR_GRAY2BGR);
-            
-            String projectDir = System.getProperty("user.dir");
+        //Chọn YOLO và xuất file csv
+        if (batYolo && csvPath != null) {    
+            if (kq.channels() == 1) Imgproc.cvtColor(kq, kq, Imgproc.COLOR_GRAY2BGR);  
+            /*   // Nếu ảnh đang đen trắng thì chuyển lại màu để model chạy chuẩn
+                 Đen trắng (Grayscale): có 1 kênh
+                 Ảnh màu (BGR - Blue, Green, Red): có 3 kênh
+            */
+
+            String folderProject = System.getProperty("user.dir");   //Lấy đường dẫn project
             // Gọi hàm nhận diện và ghi file
-            chayYoloVaGhiFile(kq, projectDir, fileVao.getName(), csvPath);
+            chayYoloVaGhiFile(kq, folderProject, fileVao.getName(), csvPath);   //Gọi hàm bên dưới
             
-            src.release(); kq.release();
+            src.release(); kq.release();     //Giải phóng bộ nhớ
             return null; // Không trả về đường dẫn ảnh vì không lưu ảnh
         }
 
-        // 4. Nếu KHÔNG chọn YOLO thì lưu ảnh bình thường
-        new File(folderRa).mkdirs(); 
+        //Nếu không chọn YOLO thì lưu ảnh kết quả bình thường
+        new File(folderRa).mkdirs();   //Nếu chưa có thư mục ra thì tự tạo để tránh lôix
         String path = folderRa + "\\Processed_" + fileVao.getName(); //Tạo tên file mới
         Imgcodecs.imwrite(path, kq);    
         /*  Lệnh ghi file, lấy dữ liệu từ biến kq, nén thành file ảnh 
             và lưu xuống đường dẫn path 
         */  
 
-        //Giải phóng bộ nhớ
-        src.release();
-        kq.release();
-        
+        src.release();  kq.release();   //Giải phóng bộ nhớ
         return path; // Trả về đường dẫn để UI hiện lên
     }
 
-    // --- HÀM CHẠY YOLO VÀ GHI TÊN VẬT THỂ ---
-    private void chayYoloVaGhiFile(Mat frame, String folderProject, String fileName, String csvPath) {
+    // Hàm chạy YOLO và ghi vào file csv
+    private void chayYoloVaGhiFile(Mat src, String folderProject, String fileName, String csvPath) {
         try {
             // Load Model
             String w = folderProject + "\\yolo\\yolov3.weights";
             String c = folderProject + "\\yolo\\yolov3.cfg";
             String n = folderProject + "\\yolo\\coco.names";
 
-            Net net = Dnn.readNetFromDarknet(c, w);
-            net.setPreferableBackend(Dnn.DNN_BACKEND_OPENCV);
-            net.setPreferableTarget(Dnn.DNN_TARGET_CPU);
+            Net net = Dnn.readNetFromDarknet(c, w);  
+            /*  YOLO gốc được viết trên một framework là Darknet (viết bằng C)
+                OpenCV cần dùng hàm chuyên biệt này để đọc hiểu được định dạng file của Darknet
+            */
+            net.setPreferableBackend(Dnn.DNN_BACKEND_OPENCV); //Dùng chính bộ tính toán C++ mặc định của OpenCV để chạy mạng này
+            net.setPreferableTarget(Dnn.DNN_TARGET_CPU);    //Chạy bằng CPU
 
-            long start = System.currentTimeMillis();
+            long start = System.currentTimeMillis();  //Thời gian hiện tại trước khi nhận diện, để tí tính thời gian nhận diện
 
-            // Detect
-            Mat blob = Dnn.blobFromImage(frame, 1.0/255, new Size(416, 416), new Scalar(0,0,0), true, false);
-            net.setInput(blob);
-            List<Mat> outs = new ArrayList<>();
+            // Nhận diện vật thể 
+            Mat blob = Dnn.blobFromImage(src, 1.0/255, new Size(416, 416), new Scalar(0,0,0), true, false);
+            /*  Mat blob: Đây không phải là ảnh thường nữa. Blob (Binary Large Object) là một khối dữ liệu 4 chiều 
+            (Số lượng ảnh, Số kênh màu, Chiều cao, Chiều rộng) mà mạng nơ-ron có thể hiểu được.
+                src: file ảnh đầu vào
+                1.0/255: ảnh gốc có giá trị pixel từ 0-255 (quá lớn để tính toán nhanh). Nhân với 1/255 để ép về 0-1 giúp AI tính toán
+                new Size(416,416): Yolov3 được huấn luyện với kích thước ảnh vuông 416x416 nên ta ép ảnh về đúng kích thước
+                new Scalar(0,0,0): Mean subtraction (Trừ giá trị trung bình). Ở đây ta để 0, tức là không trừ gì cả
+                true (SwapRB): OpenCV đọc ảnh theo chuẩn BGR, còn YOLO được huấn luyện theo chuẩn RGB, nên ta đổi lại 
+                false (crop): ko crop chỉ resize
+            */
+
+            net.setInput(blob);  //Đưa dữ liệu vào mạng 
+
+            List<Mat> outs = new ArrayList<>();  
+            /*  YOLOv3 là một mạng phức tạp, nó không chỉ trả về 1 kết quả
+                Nó có 3 lớp đầu ra (Output Layers) tương ứng với việc nhận diện vật thể ở 3 kích thước khác nhau (lớn, trung bình, nhỏ)
+                Do đó, ta cần một cái danh sách (List<Mat>) để hứng trọn bộ 3 kết quả này
+             */
+
             net.forward(outs, net.getUnconnectedOutLayersNames());
+            /*  net.forward(...): Đây là lệnh tốn CPU nhất. Nó ra lệnh cho dữ liệu chạy từ đầu vào, qua hàng trăm lớp ẩn, 
+            nhân ma trận liên tục để ra đến đầu ra. 
+                outs: Kết quả sau khi chạy xong sẽ đổ vào biến này
+                net.getUnconnectedOutLayersNames(): Hàm này tự động tìm tên của các lớp cuối cùng trong mạng YOLO 
+            (thường tên là yolo_82, yolo_94, yolo_106) để trích xuất dữ liệu tại đó 
+            */
 
-            // Đọc tên class
-            List<String> names = new ArrayList<>();
+            // YOLO chỉ trả về những con số, ví dụ là thấy vật thể số 0. Đoạn code này dùng để chuyển từ số qua chữ (vd 0 -> bus)
+            List<String> names = new ArrayList<>();    //Tạo 1 list rỗng để chuẩn bị chứa tên của 80 vật thể để truy xuất dữ liệu sau
+
             try (Scanner sc = new Scanner(new File(n))) {
-                while (sc.hasNextLine()) names.add(sc.nextLine());
+                while (sc.hasNextLine()) names.add(sc.nextLine());    //Vòng lặp nạp dữ liệu
             }
+            /*  n: Đường dẫn tới coco.names
+                Scanner: Công cụ giúp đọc file văn bản từng dòng một 
+                Bình thường mở file xong phải nhớ lệnh close() để đóng lại (không là bị rò rỉ bộ nhớ)
+            Viết trong ngoặc try (...) thế này thì Java sẽ tự động đóng file ngay khi đọc xong
+            */
 
             // Lọc kết quả
             List<String> detectedObjects = new ArrayList<>();
@@ -119,10 +153,10 @@ public class ImageProcess {
                     float conf = (float) result.maxVal;
 
                     if (conf > confThreshold) {
-                        int centerX = (int) (row.get(0, 0)[0] * frame.cols());
-                        int centerY = (int) (row.get(0, 1)[0] * frame.rows());
-                        int width = (int) (row.get(0, 2)[0] * frame.cols());
-                        int height = (int) (row.get(0, 3)[0] * frame.rows());
+                        int centerX = (int) (row.get(0, 0)[0] * src.cols());
+                        int centerY = (int) (row.get(0, 1)[0] * src.rows());
+                        int width = (int) (row.get(0, 2)[0] * src.cols());
+                        int height = (int) (row.get(0, 3)[0] * src.rows());
                         int left = centerX - width / 2;
                         int top = centerY - height / 2;
 
@@ -157,7 +191,7 @@ public class ImageProcess {
 
             FileWriter writer = new FileWriter(csvPath, true); // true = append
             String line = String.format("%s,%dx%d,%d,%s\n", 
-                fileName, frame.cols(), frame.rows(), time, listObjStr);
+                fileName, src.cols(), src.rows(), time, listObjStr);
             writer.append(line);
             writer.close();
 
