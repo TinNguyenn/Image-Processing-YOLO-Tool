@@ -1,0 +1,11 @@
+#Cấu hình VS Code & File biên dịch 
+.vscode/
+*.class
+
+#File nặng (GitHub chặn >100MB) 
+yolo/yolov3.weights
+lib/opencv_java4120.dll
+
+#Kết quả chạy (Không cần up lên) 
+yolo_report/
+Anh_sau_xu_ly/
