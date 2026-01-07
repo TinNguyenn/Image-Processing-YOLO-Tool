@@ -1,5 +1,5 @@
-import com.formdev.flatlaf.FlatLightLaf;
-import javax.swing.*;
+import com.formdev.flatlaf.FlatLightLaf;       //Thư viện bên ngoài vào cho giao diện đẹp hơn (bo góc các nút)
+import javax.swing.*;              //Thư viện tạo giao diện đồ họa
 
 public class Main {
     public static void main(String[] args) throws Exception {
