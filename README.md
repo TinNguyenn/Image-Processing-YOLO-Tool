@@ -35,6 +35,7 @@ Do giới hạn dung lượng của GitHub, một số file thư viện nặng �
 2. Đảm bảo đã cài đặt **Extension Pack for Java**.
 3. Cấu trúc thư mục chuẩn sẽ trông như sau:
 
+```text
 ├── lib/
 │   ├── flatlaf-3.2.5.jar
 │   ├── opencv_java4120.dll
@@ -50,6 +51,7 @@ Do giới hạn dung lượng của GitHub, một số file thư viện nặng �
 ├── yolo_report/
 ├── .gitignore
 └── README.md
+```
 
 ### Bước 3: Chạy chương trình
 - Mở file `src/Main.java`.
