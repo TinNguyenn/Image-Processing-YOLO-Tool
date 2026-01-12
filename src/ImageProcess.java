@@ -139,61 +139,72 @@ public class ImageProcess {
             */
 
             // Lọc kết quả
-            List<String> detectedObjects = new ArrayList<>();
-            float confThreshold = 0.5f; 
-            List<Rect2d> boxes = new ArrayList<>();
-            List<Float> confs = new ArrayList<>();
-            List<Integer> classIds = new ArrayList<>();
+            List<String> detectedObjects = new ArrayList<>();    //List lưu kết quả sau khi lọc cuối cùng (vd apple)
+            float confThreshold = 0.5f;     //Confidence threshold (ngưỡng tin cậy): đặt là 50%, trên 50% thì mới xét
 
-            for (Mat out : outs) {
-                for (int i = 0; i < out.rows(); i++) {
-                    Mat row = out.row(i);
-                    Mat scores = row.colRange(5, out.cols());
-                    Core.MinMaxLocResult result = Core.minMaxLoc(scores);
-                    float conf = (float) result.maxVal;
+            List<Rect2d> boxes = new ArrayList<>();     //Lưu thông tin các hộp sau khi chạy YOLO
+            List<Float> confs = new ArrayList<>();      //Confidence Score: điểm đánh giá khi nhận diện (ví dụ 0.1 = 10%)
+            List<Integer> classIds = new ArrayList<>(); //Để chứa số nguyên, vì YOLO nhận diện là ra số chứ ko ra chữ (số thự tự trong coco.names)
 
-                    if (conf > confThreshold) {
-                        int centerX = (int) (row.get(0, 0)[0] * src.cols());
-                        int centerY = (int) (row.get(0, 1)[0] * src.rows());
-                        int width = (int) (row.get(0, 2)[0] * src.cols());
-                        int height = (int) (row.get(0, 3)[0] * src.rows());
-                        int left = centerX - width / 2;
-                        int top = centerY - height / 2;
+            for (Mat out : outs) {            //Duyệt qua 3 lớp đầu ra của YOLOv3 (13x13, 26x26, 52x52)
+                for (int i = 0; i < out.rows(); i++) {       //DUyệt từng dòng trong mỗi lớp đấy, mỗi dòng là 1 hộp
+                    Mat row = out.row(i);             //Lấy dữ liệu dòng hiện tại
+                    Mat scores = row.colRange(5, out.cols());      //Cắt lấy phần điểm số, từ cột 5 trở đi
+                    Core.MinMaxLocResult result = Core.minMaxLoc(scores);    //Tìm giá trị lớn nhất và điểm số của chúng (ko quan tâm giá trị min)
+                    float conf = (float) result.maxVal;      //Lấy ra giá trị lớn nhất và lưu vào biến conf
 
-                        boxes.add(new Rect2d(left, top, width, height));
-                        classIds.add((int) result.maxLoc.x);
-                        confs.add(conf);
+                    if (conf > confThreshold) {     //Nếu conf > 0.5
+                        int centerX = (int) (row.get(0, 0)[0] * src.cols());    //Tâm vật thể nằm ở pixel bao nhiêu, đổi từ 0-1 sang pixel 
+                        int centerY = (int) (row.get(0, 1)[0] * src.rows());    //Tâm vật thể nằm ở pixel bao nhiêu, đổi từ 0-1 sang pixel 
+                        int width = (int) (row.get(0, 2)[0] * src.cols());      //Vật thể rộng bao nhiêu pixel
+                        int height = (int) (row.get(0, 3)[0] * src.rows());     //Vật thể cao bao nhiêu pixel
+                        int left = centerX - width / 2;       //Tọa độ X của mép trái
+                        int top = centerY - height / 2;       //Tọa độ Y của mép trên
+
+                        boxes.add(new Rect2d(left, top, width, height));    //Lưu vào list boxes về tọa độ
+                        classIds.add((int) result.maxLoc.x);                //Lưu vị trí của xác suất cao nhất vào list classIds
+                        confs.add(conf);            //Lưu giá trị conf vào list confs
                     }
                 }
             }
 
-            // NMS để lọc trùng
-            if (!boxes.isEmpty()) {
+            // NMS để lọc trùng  (Non-maximum Suppression)
+            if (!boxes.isEmpty()) {    
+                /*Các biến boxes và confs đang ở java list, còn openCV được viết bằng C++ nên yêu cầu đầu vào là Ma trận, các bước sau 
+                chuyển nó về ma trận cột N x 1 */
                 MatOfRect2d boxMat = new MatOfRect2d(); boxMat.fromList(boxes);
                 MatOfFloat confMat = new MatOfFloat(); confMat.fromList(confs);
-                MatOfInt indices = new MatOfInt();
-                Dnn.NMSBoxes(boxMat, confMat, 0.5f, 0.4f, indices);
+                MatOfInt indices = new MatOfInt();      //Rỗng để chứa kết quả đầu ra
 
-                for (int i : indices.toArray()) {
-                    int id = classIds.get(i);
-                    if (id < names.size()) {
-                        detectedObjects.add(names.get(id)); // Lấy tên vật thể
+                Dnn.NMSBoxes(boxMat, confMat, 0.5f, 0.4f, indices);
+                /*  boxMat: danh sách vị trí các hộp (kể cả hộp trùng, hộp lệch)
+                    confMat: bảng điểm tương ứng của các hộp
+                    score_threshold: 0.5f: Bất kì hộp nào có độ tin cậy < 50% thì loại luôn (dù ở trên đã lọc rồi nhưng mà ở đây nhập lại vì tham số bắt buộc)
+                    nms_threshold: 0.4f (IoU - Intersection over Union): Quy định thế nào là trùng nhau
+                        lấy 2 cái hộ chồng lên nhau. Tính diện tích phần giao nhau (intersection) chia cho tổng diện tích bao phủ (union)
+                        Nếu số đấy > 40% thì là trùng nhau, xóa thằng có điểm tin cậy thấp hơn
+                    indices: kết quả lưu vào đây, trả về danh sách số thứ tự của của những hộp được giữ lại. Ví dụ indices = [0, 5, 12]
+                */
+
+                for (int i : indices.toArray()) {    //Duyệt từng thằng trong indices sau khi biến nó thành mảng
+                    int id = classIds.get(i);        //Lấy trong classIds ra xem nó là số gì, ví dụ là 5 thì tìm đến dòng thứ 5 xem là con gì (0: con chó,...)
+                    if (id < names.size()) {         //Check xem có vượt quá 80 ko ,nếu có thì lỗi
+                        detectedObjects.add(names.get(id)); // Lấy tên vật thể và lưu vào list detectedObjects
                     }
                 }
             }
 
-            long time = System.currentTimeMillis() - start;
+            long time = System.currentTimeMillis() - start;         //Tính thời gian nhận diện để tí ghi ra file csv
 
-            // Ghi vào CSV
-            // Format: Tên_File, Kích_Thước, Thời_Gian, Danh_Sách_Vật_Thể
-            String listObjStr = String.join(" | ", detectedObjects); // Ví dụ: person | car | dog
-            if (listObjStr.isEmpty()) listObjStr = "None";
+            //Ghi vào CSV
+            //Format: Tên_File, Kích_Thước, Thời_Gian, Danh_Sách_Vật_Thể
+            String listObjStr = String.join(" | ", detectedObjects); //Ví dụ: person | car | dog
+            if (listObjStr.isEmpty()) listObjStr = "None";      //Trường hợp ko thấy gì cho là None
 
-            FileWriter writer = new FileWriter(csvPath, true); // true = append
-            String line = String.format("%s,%dx%d,%d,%s\n", 
-                fileName, src.cols(), src.rows(), time, listObjStr);
-            writer.append(line);
-            writer.close();
+            FileWriter writer = new FileWriter(csvPath, true);   //Mở file ở chế độ nối tiếp, nếu ko thì khi mở ra mất hết những gì đã lưu 
+            String line = String.format("%s,%dx%d,%d,%s\n", fileName, src.cols(), src.rows(), time, listObjStr);  //Gộp thành 1 string
+            writer.append(line);    //Ghi vào file csv
+            writer.close();         //Cần có lệnh này để lưu lại những gì đã ghi
 
         } catch (Exception e) {
             e.printStackTrace();
