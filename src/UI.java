@@ -39,11 +39,10 @@ public class UI extends JFrame {
     int resultH, resultW;            //Kích thước thực của ảnh kết quả
     boolean dangKeoChuot = false;    //Biến lưu trạng thái kéo chuột 
 
-    // --- BIẾN MỚI HỖ TRỢ RESIZE VÀ HIỂN THỊ ---
+    //Resize và hiển thị
     int hienThiW, hienThiH; 
     int offsetX = 0, offsetY = 0; 
     boolean isUpdating = false; // Cờ chặn vòng lặp vô tận khi resize
-    // ------------------------------------------
 
     //Các font chữ
     Font fontChuan = new Font("Segoe UI", Font.PLAIN, 13);    
@@ -110,11 +109,11 @@ public class UI extends JFrame {
         //1.3.1: GridBagLayout cho Cài đặt (CĂN GIỮA)
         JPanel pnlSettings = new JPanel(new GridBagLayout());    
         pnlSettings.setOpaque(false);    
-        pnlSettings.setAlignmentX(Component.CENTER_ALIGNMENT); // <-- Căn giữa panel cài đặt
+        pnlSettings.setAlignmentX(Component.CENTER_ALIGNMENT); //Căn giữa panel cài đặt
         GridBagConstraints gbc = new GridBagConstraints();       
 
         gbc.insets = new Insets(5, 0, 5, 5);  
-        gbc.anchor = GridBagConstraints.CENTER; // <-- Các thành phần con sẽ nằm giữa
+        gbc.anchor = GridBagConstraints.CENTER; //Các thành phần con sẽ nằm giữa
 
         // Dòng 1: Tiêu đề Resize
         gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 4;     
@@ -125,7 +124,7 @@ public class UI extends JFrame {
 
         // Dòng 2: ComboBox Tỷ lệ
         gbc.gridy = 1; gbc.gridwidth = 4; gbc.fill = GridBagConstraints.HORIZONTAL;
-        String[] tyLeOptions = {"Tự do (Không khóa)", "Giữ tỷ lệ gốc", "16:9 (Youtube)", "4:3 (Camera)", "1:1 (Vuông)"};
+        String[] tyLeOptions = {"Tự do", "Giữ tỷ lệ gốc", "16:9 (Youtube)", "4:3 (Camera)", "1:1 (Vuông)"};
         cboTyLe = new JComboBox<>(tyLeOptions);
         cboTyLe.setFont(fontChuan);
         ((JLabel)cboTyLe.getRenderer()).setHorizontalAlignment(SwingConstants.CENTER); // Căn giữa chữ trong ComboBox
@@ -190,7 +189,7 @@ public class UI extends JFrame {
         JPanel pnlCheck = new JPanel(new GridLayout(1, 3, 5, 0));   // 1 dòng, 3 cột
         pnlCheck.setOpaque(false);               
         pnlCheck.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30)); 
-        pnlCheck.setAlignmentX(Component.CENTER_ALIGNMENT); // <-- Căn giữa panel
+        pnlCheck.setAlignmentX(Component.CENTER_ALIGNMENT); // Căn giữa panel
 
         chkDenTrang = new JCheckBox("Đen trắng");    
         chkDenTrang.setFont(fontCheckBox); chkDenTrang.setOpaque(false);       
@@ -204,8 +203,6 @@ public class UI extends JFrame {
         chkKhuNhieu.setFont(fontCheckBox); chkKhuNhieu.setOpaque(false);
         chkKhuNhieu.setHorizontalAlignment(SwingConstants.CENTER);
 
-        // Đã bỏ chkNhanDien vì dùng ComboBox rồi
-
         pnlCheck.add(chkDenTrang);      
         pnlCheck.add(chkLatAnh); 
         pnlCheck.add(chkKhuNhieu);
@@ -213,11 +210,11 @@ public class UI extends JFrame {
         pnlBot.add(pnlCheck);      
         pnlBot.add(Box.createVerticalStrut(15));    
 
-        //1.3. Nút chức năng (CĂN GIỮA)
+        //1.3. Nút chức năng
         JPanel pnlActions = new JPanel(new GridLayout(3, 1, 0, 10));    
         pnlActions.setOpaque(false);           
         pnlActions.setMaximumSize(new Dimension(Integer.MAX_VALUE, 140));   
-        pnlActions.setAlignmentX(Component.CENTER_ALIGNMENT); // <-- Căn giữa
+        pnlActions.setAlignmentX(Component.CENTER_ALIGNMENT); //Căn giữa
 
         btnChonOutput = taoNutLon("2. Chọn Nơi Lưu", new Color(23, 162, 184), Color.WHITE);  
         btnXuLyBatch = taoNutLon("3. Chạy Tất Cả", new Color(40, 167, 69), Color.WHITE);
@@ -233,7 +230,7 @@ public class UI extends JFrame {
         lblPathOutput = new JLabel("Chưa chọn nơi lưu!");
         lblPathOutput.setFont(new Font("Segoe UI", Font.ITALIC, 12));  
         lblPathOutput.setForeground(Color.RED);          
-        lblPathOutput.setAlignmentX(Component.CENTER_ALIGNMENT); // <-- Căn giữa
+        lblPathOutput.setAlignmentX(Component.CENTER_ALIGNMENT); //Căn giữa
         pnlBot.add(lblPathOutput);     
 
         pnlLeft.add(pnlTop, BorderLayout.NORTH); 
@@ -277,7 +274,7 @@ public class UI extends JFrame {
         setupResizeEvents(); // Thêm sự kiện resize thông minh
     }
 
-    // --- CÁC HÀM XỬ LÝ RESIZE TỰ ĐỘNG ---
+    // Hàm xử lý resize
     private void setupResizeEvents() {
         cboTyLe.addActionListener(e -> updateResizeFromWidth());
         txtRong.getDocument().addDocumentListener(new DocumentListener() {
@@ -337,7 +334,6 @@ public class UI extends JFrame {
         else if (selected.contains("1:1")) return 1.0;
         return 0; 
     }
-    // ----------------------------------------
 
     //Hàm thiết lập sự kiện
     private void setupEvents() {
@@ -437,7 +433,7 @@ public class UI extends JFrame {
             }
         });
 
-        //Nút xử lý tất cả (Đã cập nhật logic CSV)
+        //Nút xử lý tất cả 
         btnXuLyBatch.addActionListener(e -> {
             if (danhSachFileGoc.isEmpty() || folderOutput == null) {     
                 JOptionPane.showMessageDialog(this, "Chưa chọn ảnh hoặc nơi lưu!");
@@ -473,10 +469,10 @@ public class UI extends JFrame {
         btnCatAnh.addActionListener(e -> {     
             if (fileAnhHienTai == null) return;      
             
-            // Tính toán tỷ lệ dựa trên kích thước ẢNH ĐANG HIỂN THỊ
+            // Tính toán tỷ lệ dựa trên kích thước ảnh đang hiển thị
             double tyLeX = (double) realW / hienThiW;    
             
-            // Tính toạ độ chuột kéo trên UI (đã trừ offset)
+            // Tính toạ độ chuột kéo trên UI
             int rectX = Math.min(startX, endX);
             int rectY = Math.min(startY, endY);
             int rectW = Math.abs(startX - endX);
@@ -546,7 +542,7 @@ public class UI extends JFrame {
         } catch (Exception e) {} 
     }
     
-    //Hàm hiển thị ảnh lên Label (Có tính toán Aspect Fit)
+    //Hàm hiển thị ảnh lên Label 
     void hienAnhLenLabel(File f, JLabel lbl, boolean isKetQua) {
     try {
         if (lbl.getIcon() != null) {
@@ -565,14 +561,14 @@ public class UI extends JFrame {
         int imgW = img.getWidth();
         int imgH = img.getHeight();
 
-        // Tính tỷ lệ scale sao cho vừa khung mà KHÔNG MÉO (Aspect Fit)
+        // Tính tỷ lệ scale sao cho vừa khung mà không méo
         double scale = Math.min((double)labelW / imgW, (double)labelH / imgH);
         
         // Kích thước mới của ảnh hiển thị
         int newW = (int) (imgW * scale);
         int newH = (int) (imgH * scale);
 
-        // Cập nhật các biến toàn cục để dùng cho chức năng Cắt Ảnh (Crop)
+        // Cập nhật các biến toàn cục để dùng cho chức năng cắt ảnh
         if (!isKetQua) { 
             hienThiW = newW;
             hienThiH = newH;
@@ -626,13 +622,5 @@ public class UI extends JFrame {
         lbl.setFont(new Font("Segoe UI", Font.ITALIC, 14));  
         lbl.setForeground(Color.GRAY);     
         lbl.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 230), 2)); 
-    }
-
-    //Hàm main
-    public static void main(String[] args) throws Exception{
-            String thuMucGoc = System.getProperty("user.dir");   
-            System.load(thuMucGoc + "\\lib\\opencv_java4120.dll");   
-            UIManager.setLookAndFeel(new com.formdev.flatlaf.FlatLightLaf());   
-            new UI().setVisible(true);     
-    }
+    } 
 }
